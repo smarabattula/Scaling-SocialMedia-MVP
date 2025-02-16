@@ -8,23 +8,25 @@ import psycopg2
 
 router = APIRouter(prefix = "/posts", tags = ["posts"])
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostBase)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostCreate)
 async def create_post(post: schemas.PostCreate,
                       db: Session = Depends(get_db),
-                      user_id: int = Depends(oauth2.get_current_user)):
+                      current_user: models.User = Depends(oauth2.get_current_user)):
     try:
+        print(current_user.email)
         # serializing data
         new_post = models.Post(**post.model_dump())
         db.add(new_post)
         db.commit()
         db.refresh(new_post)
         return new_post
-    except psycopg2.Error as e:
+    except HTTPException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error occurred while inserting into the database: {e}")
 
 # Read all posts
 @router.get("/", response_model= List[schemas.Post])
-async def get_posts(db: Session = Depends(get_db)):
+async def get_posts(db: Session = Depends(get_db),
+                    current_user: models.User = Depends(oauth2.get_current_user)):
     try:
         posts = db.query(models.Post).all()
         return posts
@@ -33,7 +35,9 @@ async def get_posts(db: Session = Depends(get_db)):
 
 # Read post with ID (as Path Parameter)
 @router.get("/{id}", response_model= schemas.Post)
-async def get_post(id: str, db: Session = Depends(get_db)):
+async def get_post(id: str,
+                   db: Session = Depends(get_db),
+                   current_user: models.User = Depends(oauth2.get_current_user)):
     try:
         query = db.query(models.Post).filter(models.Post.id == id)
         result = query.first()
@@ -45,7 +49,10 @@ async def get_post(id: str, db: Session = Depends(get_db)):
 
 # Delete Post with ID
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(id: str, db: Session = Depends(get_db)):
+async def delete_post(id: str,
+                      db: Session = Depends(get_db),
+                      user_id: int = Depends(oauth2.get_current_user)):
+
     query = db.query(models.Post).filter(models.Post.id == id)
     if not query.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -55,7 +62,10 @@ async def delete_post(id: str, db: Session = Depends(get_db)):
 
 # Update Post
 @router.put("/{id}")
-async def update_post(id: str, post: schemas.PostBase, db: Session = Depends(get_db)):
+async def update_post(id: str,
+                      post: schemas.PostBase,
+                      db: Session = Depends(get_db),
+                      current_user: models.User = Depends(oauth2.get_current_user)):
     query = db.query(models.Post).filter(models.Post.id == id)
     existing_post = query.first()
     if not existing_post:

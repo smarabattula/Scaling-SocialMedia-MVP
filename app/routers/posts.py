@@ -73,6 +73,8 @@ async def update_post(id: str,
     existing_post = query.first()
     if not existing_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Post with id {id} not found")
+    elif existing_post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
     update_data = post.model_dump(exclude_unset=True)
     for key, value in update_data.items():

@@ -34,9 +34,9 @@ class PostCreate(PostBase):
 
 class Post(PostBase):
     id: str
-    title: str
-    content: str
     createdAt: datetime
+    owner_id: int
+
     class Config:
         from_attributes = True
 

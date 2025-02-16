@@ -8,14 +8,13 @@ import psycopg2
 
 router = APIRouter(prefix = "/posts", tags = ["posts"])
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostCreate)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Post)
 async def create_post(post: schemas.PostCreate,
                       db: Session = Depends(get_db),
                       current_user: models.User = Depends(oauth2.get_current_user)):
     try:
-        print(current_user.email)
         # serializing data
-        new_post = models.Post(**post.model_dump())
+        new_post = models.Post(owner_id = current_user.id, **post.model_dump())
         db.add(new_post)
         db.commit()
         db.refresh(new_post)
@@ -51,11 +50,15 @@ async def get_post(id: str,
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(id: str,
                       db: Session = Depends(get_db),
-                      user_id: int = Depends(oauth2.get_current_user)):
+                      current_user: models.User = Depends(oauth2.get_current_user)):
 
     query = db.query(models.Post).filter(models.Post.id == id)
-    if not query.first():
+    post = query.first()
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    if post.owner_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+
     query.delete(synchronize_session=False)
     db.commit()
     return {f"Message": f"Post with id {id} successfully deleted!"}

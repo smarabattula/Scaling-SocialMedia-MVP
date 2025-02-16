@@ -1,5 +1,5 @@
 from .database import Base
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 # SQLAlchemy Models
@@ -16,6 +16,7 @@ class Post(Base):
     content = Column(String, nullable=False)
     published = Column(Boolean, server_default='TRUE', nullable=False)
     createdAt = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('NOW()'))
+    owner_id = Column(Integer, ForeignKey("fastapi-db.users_2.id", ondelete="CASCADE"), nullable = False)
 
 class User(Base):
     __tablename__ = "users_2"

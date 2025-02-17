@@ -2,6 +2,8 @@ from .database import Base
 from sqlalchemy import Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.orm import relationship
+
 # SQLAlchemy Models
 # Used for defining columns on tables
 # And simplify CRUD operations within DB
@@ -16,7 +18,13 @@ class Post(Base):
     content = Column(String, nullable=False)
     published = Column(Boolean, server_default='TRUE', nullable=False)
     createdAt = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('NOW()'))
-    owner_id = Column(Integer, ForeignKey("fastapi-db.users_2.id", ondelete="CASCADE"), nullable = False)
+    owner_id = Column(Integer,
+                    ForeignKey("fastapi-db.users_2.id",
+                    ondelete="CASCADE"),
+                    nullable = False)
+
+    owner = relationship("User")
+
 
 class User(Base):
     __tablename__ = "users_2"

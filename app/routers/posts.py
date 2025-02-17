@@ -23,11 +23,16 @@ async def create_post(post: schemas.PostCreate,
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error occurred while inserting into the database: {e}")
 
 # Read all posts
-@router.get("/", response_model= List[schemas.Post])
+@router.get("/", response_model=List[schemas.Post])
 async def get_posts(db: Session = Depends(get_db),
-                    current_user: models.User = Depends(oauth2.get_current_user)):
+                    current_user: models.User = Depends(oauth2.get_current_user),
+                    limit: int = 5,
+                    sortBy: str = "createdAt",
+                    sortOrder: str = "desc"):
     try:
-        posts = db.query(models.Post).all()
+        # Handling query parameters
+        order = models.Post.__table__.c[sortBy].asc() if sortOrder == "asc" else models.Post.__table__.c[sortBy].desc()
+        posts = db.query(models.Post).order_by(order).limit(limit).all()
         return posts
     except psycopg2.Error as e:
         return {"Message": f"An error occurred while querying the database: {e}"}

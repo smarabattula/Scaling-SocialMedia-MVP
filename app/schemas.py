@@ -36,7 +36,7 @@ class Post(PostBase):
     id: str
     createdAt: datetime
     owner_id: int
-
+    owner: 'UserGet'
     class Config:
         from_attributes = True
 

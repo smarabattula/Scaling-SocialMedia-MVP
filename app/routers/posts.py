@@ -1,10 +1,8 @@
-# Write Data
 from fastapi import status, HTTPException, Depends, APIRouter
 from ..database import get_db
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from .. import models, schemas, oauth2
-import psycopg2
 
 router = APIRouter(prefix = "/posts", tags = ["posts"])
 
@@ -19,7 +17,7 @@ async def create_post(post: schemas.PostCreate,
         db.commit()
         db.refresh(new_post)
         return new_post
-    except HTTPException as e:
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error occurred while inserting into the database: {e}")
 
 # Read all posts
@@ -28,14 +26,15 @@ async def get_posts(db: Session = Depends(get_db),
                     current_user: models.User = Depends(oauth2.get_current_user),
                     limit: int = 5,
                     sortBy: str = "createdAt",
-                    sortOrder: str = "desc"):
+                    sortAsc: bool = True,
+                    search: Optional[str] = ""):
     try:
         # Handling query parameters
-        order = models.Post.__table__.c[sortBy].asc() if sortOrder == "asc" else models.Post.__table__.c[sortBy].desc()
-        posts = db.query(models.Post).order_by(order).limit(limit).all()
+        order = models.Post.__table__.c[sortBy].asc() if sortAsc else models.Post.__table__.c[sortBy].desc()
+        posts = db.query(models.Post).filter(models.Post.title.contains(search)).order_by(order).limit(limit).all()
         return posts
-    except psycopg2.Error as e:
-        return {"Message": f"An error occurred while querying the database: {e}"}
+    except HTTPException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e)
 
 # Read post with ID (as Path Parameter)
 @router.get("/{id}", response_model= schemas.Post)
@@ -48,8 +47,8 @@ async def get_post(id: str,
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id {id} not found")
         return result
-    except psycopg2.Error as e:
-        return {"Message": f"An error occurred while querying the database: {e}"}
+    except HTTPException:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id {id} not found")
 
 # Delete Post with ID
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)

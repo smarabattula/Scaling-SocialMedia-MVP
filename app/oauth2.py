@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from . import schemas
 from . import models
+from .config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 # Get the parent directory
@@ -19,9 +20,9 @@ parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 dotenv_path = os.path.join(parent_dir, '.env')
 load_dotenv(dotenv_path)
 
-ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv('ACCESS_TOKEN_EXPIRE_SECONDS'))
-SECRET_KEY = os.getenv('SECRET_KEY')
-ALGORITHM = os.getenv('ALGORITHM')
+ACCESS_TOKEN_EXPIRE_SECONDS = settings.access_token_expire_seconds
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,3 +61,4 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
     query = db.query(models.User).filter(models.User.id == token_data.id)
     user = query.first()
     return user
+

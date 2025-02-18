@@ -30,15 +30,6 @@ class PostCreate(PostBase):
     title: str
     content: str
     published: bool = True
-    # createdAt auto created by database
-
-class Post(PostBase):
-    id: str
-    createdAt: datetime
-    owner_id: int
-    owner: 'UserGet'
-    class Config:
-        from_attributes = True
 
 class UserCreate(BaseModel):
     id: Optional[int] = None
@@ -61,4 +52,23 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     id: int | None = None
+
+class Like(BaseModel):
+    post_id: str
+
+class Post(PostBase):
+    id: str
+    createdAt: datetime
+    owner_id: int
+    owner: UserGet
+
+    class Config:
+        from_attributes = True
+
+class PostOut(BaseModel):
+    post: Post
+    likes: int
+
+    class Config:
+        from_attributes = True
 

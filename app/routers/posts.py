@@ -1,6 +1,7 @@
 from fastapi import status, HTTPException, Depends, APIRouter
+from sqlalchemy import func
 from ..database import get_db
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, subqueryload
 from typing import List, Optional
 from .. import models, schemas, oauth2
 
@@ -21,7 +22,7 @@ async def create_post(post: schemas.PostCreate,
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error occurred while inserting into the database: {e}")
 
 # Read all posts
-@router.get("/", response_model=List[schemas.Post])
+@router.get("/", response_model=List[schemas.PostOut])
 async def get_posts(db: Session = Depends(get_db),
                     current_user: models.User = Depends(oauth2.get_current_user),
                     limit: int = 5,
@@ -31,22 +32,37 @@ async def get_posts(db: Session = Depends(get_db),
     try:
         # Handling query parameters
         order = models.Post.__table__.c[sortBy].asc() if sortAsc else models.Post.__table__.c[sortBy].desc()
-        posts = db.query(models.Post).filter(models.Post.title.contains(search)).order_by(order).limit(limit).all()
-        return posts
+        posts = db.query(models.Post, func.count(models.Likes.post_id).label("likes"))\
+            .join(models.Likes, models.Likes.post_id == models.Post.id, isouter=True)\
+            .options(subqueryload(models.Post.owner))\
+            .group_by(models.Post.id)\
+            .filter(models.Post.title.contains(search))\
+            .order_by(order)\
+            .limit(limit).all()
+
+        response = [{"post": post.__dict__, "likes": likes} for post, likes in posts]
+
+        return response
     except HTTPException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=e)
 
 # Read post with ID (as Path Parameter)
-@router.get("/{id}", response_model= schemas.Post)
+@router.get("/{id}", response_model=schemas.PostOut)
 async def get_post(id: str,
                    db: Session = Depends(get_db),
                    current_user: models.User = Depends(oauth2.get_current_user)):
     try:
-        query = db.query(models.Post).filter(models.Post.id == id)
-        result = query.first()
+        post = db.query(models.Post, func.count(models.Likes.post_id).label("likes"))\
+            .join(models.Likes, models.Likes.post_id == models.Post.id, isouter=True)\
+            .options(subqueryload(models.Post.owner))\
+            .group_by(models.Post.id)\
+            .filter(models.Post.id == id)\
+
+        result = post.first()
         if not result:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id {id} not found")
-        return result
+        post, likes = result
+        return {"post": post.__dict__, "likes": likes}
     except HTTPException:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id {id} not found")
 

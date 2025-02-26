@@ -1,7 +1,7 @@
 from datetime import datetime
 import random
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 # Pydantic Models
 # Used for Request & Response validations
@@ -16,11 +16,11 @@ class PostBase(BaseModel):
     title: Optional[str] = None
     content: Optional[str] = None
     published: Optional[bool] = None
-    createdAt: Optional[datetime] = None
+    owner_id: Optional[bool] = None
+    createdAt: Optional[datetime] = Field(default_factory=lambda: datetime.now())
 
 # Generate New Unique ID
 class PostCreate(PostBase):
-    id: str = None
 
     def __init__(self, **data):
         if 'id' not in data or data['id'] is None:
@@ -66,9 +66,13 @@ class Post(PostBase):
         from_attributes = True
 
 class PostOut(BaseModel):
-    post: Post
+    id: str
+    title: str
+    content: str
+    published: bool
+    createdAt: datetime
+    owner_id: int
     likes: int
-
     class Config:
         from_attributes = True
 

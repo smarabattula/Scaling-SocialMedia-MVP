@@ -3,9 +3,16 @@ from . import models
 from .schemas import *
 from .database import engine
 from .routers import posts, users, auth, likes
+from .redis_cache import init_redis
 
-models.Base.metadata.create_all(bind=engine)
+# Initialize FastAPI Server
 app = FastAPI()
+
+# Initialize SQLAlchemy DB models
+models.Base.metadata.create_all(bind=engine)
+
+# Initialize Redis Index Schemas
+init_redis()
 
 # Link routers for all paths
 app.include_router(posts.router)

@@ -23,8 +23,6 @@ class Post(Base):
                     ondelete="CASCADE"),
                     nullable = False)
 
-    owner = relationship("User")
-
 
 class User(Base):
     __tablename__ = "users_2"

@@ -1,5 +1,10 @@
 # Studying Application Scalability
 
+1. Clone the repo content locally in your machine
+2. Open a Python virtual environment and activate it
+3. Install requirements: `pip install -r requirements.txt`
+4. Start the app using the command: `uvicorn app.2_server_ORM:app --reload`
+
 ## Scaling a Social Media App: Part 1 – Building the MVP 🚀
 
 Every app starts small—a simple backend that manages users, posts, and interactions. But as traffic grows, the system needs to scale efficiently to handle millions of reads and writes. In this series, I’ll walk through the journey of scaling a social media app, starting from a single backend server and slowly build on top of it, while reasoning
@@ -42,4 +47,3 @@ This MVP works great for a small user base, but what happens when millions of us
  ✅ Caching posts using Redis
 
  ✅ Indexing strategies & query tuning
-

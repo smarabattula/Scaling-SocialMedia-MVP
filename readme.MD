@@ -2,11 +2,11 @@
 
 ## Scaling a Social Media App: Part 1 – Building the MVP 🚀
 
-Every app starts small—a simple backend that manages users, posts, and interactions. But as traffic grows, the system needs to scale efficiently to handle millions of reads and writes. In this series, I’ll walk through the journey of scaling a social media app, starting from a single backend server and slowly build on top of it, while reasoning
+Every app starts small—a simple backend that manages users, posts, and interactions. But as traffic grows, the system needs to scale efficiently to handle millions of reads and writes. In this series, I’ll walk through the journey of scaling a social media app, starting from a single backend server and slowly build on top of it, while reasoning the choices.
 
 **🏗️ The MVP: FastAPI + PostgreSQL**
 
-For the initial backend, I chose FastAPI for its asynchronous capabilities and rapid development speed, and PostgreSQL for structured data storage. Here's the basic architecture:
+For the initial backend, I chose FastAPI for its asynchronous capabilities and rapid development speed, and PostgreSQL for simplistic, structured data storage. Here's the basic architecture:
 
 **Users Table🧑**: Stores user_id (email for now) and hashed passwords (bcrypt). JWT-based authentication for secure API access.
 

@@ -93,5 +93,7 @@ Now that reads are optimized, next we handle massive writes from likes, comments
 ✅ Async Processing to Reduce DB Load 
 
 ✅ Event-Driven Architecture for Write Optimization 
+
 ✅ Redis caching policies (invalidation, eviction) 
+
 ✅ Database Replica Load Balancing

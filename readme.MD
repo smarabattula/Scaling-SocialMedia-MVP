@@ -64,6 +64,7 @@ As posts and users grow, fetching feeds becomes expensive. Querying millions of 
 I'm currently implementing composite index, and studied in-depth about types of database indexes, and clustered vs non-clustered index, which come very handy in usecases. For this app, clustered indices are best for feed, while non-clustered(secondary) indices are best for lookup(search). 
 
 📌 Strategy 2: **Read Replicas for Scaling Reads**
+
 ✅ Primary DB (Writes Only) – Handles inserts for posts, likes, comments. 
 
 ✅ Read Replicas (Read Queries Only) – Feeds, user lookups, post queries.

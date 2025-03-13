@@ -17,19 +17,21 @@ async def create_post(post: schemas.PostCreate,
                       current_user: models.User = Depends(oauth2.get_current_user)):
     try:
 
-        async def save_to_db(post, current_user, db):
+        def save_to_db(post, current_user, db):
             new_post = models.Post(owner_id=current_user.id, **post.model_dump())
             db.add(new_post)
             db.commit()
             db.refresh(new_post)
             return new_post
 
+        result = save_to_db(post, current_user, db)
+        return result
         # Run both tasks concurrently
-        save_db_task = asyncio.create_task(save_to_db(post, current_user, db))
-        save_redis_task = asyncio.create_task(process_post_on_redis(post, 0, current_user.id))
+        # save_db_task = asyncio.create_task(save_to_db(post, current_user, db))
+        # save_redis_task = asyncio.create_task(process_post_on_redis(post, 0, current_user.id))
 
-        results = await asyncio.gather(save_db_task, save_redis_task)
-        return results[-1]
+        # results = await asyncio.gather(save_db_task, save_redis_task)
+        # return results[-1]
     except HTTPException as e:
         db.rollback()
         async with redis_session() as r:

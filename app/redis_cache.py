@@ -4,6 +4,9 @@ from contextlib import asynccontextmanager
 from redis.commands.json.path import Path
 from . import schemas
 
+LRU_CACHE_KEY = "lru_cache_key"
+MAX_CACHE_SIZE = 100
+
 @asynccontextmanager
 async def redis_session():
     r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
@@ -32,21 +35,45 @@ async def init_redis():
             definition=IndexDefinition(prefix=["post:"], index_type=IndexType.JSON),
         )
 
-async def update_like_count(id, is_like = True):
+async def update_like_count(id, is_like=True):
     async with redis_session() as r:
         key = f"post:{id}"
-        if r.get(key):
+
+        # Use pipeline for atomic operations
+        async with r.pipeline(transaction=True) as pipe:
+            # Increment the like count or initialize it
             val = 1 if is_like else -1
-            r.json().numincrby(key, Path("$.likes"), val)
+            exists = await r.exists(key)
+
+            if exists:
+                await pipe.json().numincrby(key, Path("$.likes"), val)
+            else:
+                initial_data = {"likes": 1 if is_like else 0}
+                await pipe.json().set(key, Path.root_path(), initial_data)
+
+            await pipe.expire(key, 3600)  # Reset TTL to 1 hour on update
+
+            # Efficient LRU eviction logic using LMOVE (Redis 6.2+)
+            await pipe.lrem(LRU_CACHE_KEY, 0, key)  # Remove key if already present
+            await pipe.rpush(LRU_CACHE_KEY, key)     # Add key to end of LRU list
+
+            # Eviction logic in the same transaction
+            if await r.llen(LRU_CACHE_KEY) >= MAX_CACHE_SIZE:
+                oldest_key = await pipe.lpop(LRU_CACHE_KEY)
+                await pipe.delete(oldest_key)
+
+            await pipe.execute()
 
 async def save_post_to_redis(post_out: schemas.PostOut):
     async with redis_session() as r:
         post_dict = post_out.model_dump()
         post_dict["createdAt"] = post_dict["createdAt"].timestamp()  # Convert datetime to timestamp
         post_dict["published"] = "1" if post_dict["published"] else "0"  # Convert boolean to string
-        r.json().set(f"post:{post_out.id}", Path.root_path(), post_dict)
+        key = f"post:{post_out.id}"
+        r.json().set(key, Path.root_path(), post_dict)
+        r.expire(key, 3600)  # Set TTL to 1 hour
 
-async def process_post_on_redis(post, likes, current_user_id = None):
+async def process_post_on_redis(post, likes, current_user_id=None):
     # Construct full response object
     post_out = schemas.PostOut(
         id=post.id, title=post.title, content=post.content,

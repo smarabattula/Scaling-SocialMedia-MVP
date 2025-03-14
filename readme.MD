@@ -1,4 +1,4 @@
-# Studying Application Scalability
+# Scaling Social Media MVP
 
 1. Clone the repo content locally in your machine
 2. Open a Python virtual environment and activate it
@@ -88,6 +88,7 @@ I'm currently implementing composite index, and studied in-depth about types of 
 ✅ Event-Driven Updates – Use async/await capabilities of FastAPI & Python.
 
 🚀 What's Next? Scaling Writes & Async Processing
+
 Now that reads are optimized, next we handle massive writes from likes, comments, and posts. In Part 3, we’ll explore:
 
 ✅ Partitioning & Batching for High-Write Scaling 
@@ -99,3 +100,36 @@ Now that reads are optimized, next we handle massive writes from likes, comments
 ✅ Redis caching policies (invalidation, eviction) 
 
 ✅ Database Replica Load Balancing
+
+## Part 3 – Optimizing Writes with Kafka 🚀
+
+As my social media app scales, handling high write traffic for posts, likes, and comments becomes a major challenge. To manage this efficiently, I introduced Kafka to improve throughput, reduce database load, and ensure smooth scaling.
+
+🔹 Design Approach
+I introduced a Kafka producer that writes new posts to a Kafka topic. A separate Kafka consumer (running in a user group) listens to this topic, polls messages regularly, and writes the data asynchronously to the database.
+To further optimize reads, I implemented a write-behind (or write-back caching) strategy where data is first written to the cache (serving as the primary data source for reads), and background routines asynchronously push this data to Kafka via the producer/consumer architecture. This drastically reduced the load on the main server, as the separate consumer server efficiently polls Kafka topics and writes to the database.
+For updates and deletes, I used a combination of cache invalidation and database updates to ensure consistency. Since these operations are less frequent in a read-heavy system, this strategy achieved both performance gains and data consistency.
+
+✅ Advantages
+Decoupled writes improve scalability.
+Faster reads with cache-first strategy.
+Reduced server load for both reads and writes.
+Enabled batch writes and scheduled tasks for efficiency.
+
+🚨Disadvantages to Consider 
+While this architecture improves performance, there are some potential pitfalls:
+❗ Kafka Failures: Though rare, Kafka outages may prevent data from reaching the database, causing inconsistencies between cache and DB.
+❗ Duplicate Data Risk: Misconfigured Kafka retries can result in duplicate entries in the database.
+❗ Redis as SPOF: Since Redis acts as the primary data source for reads, it introduces a Single Point of Failure risk unless replicated or clustered.
+
+⚠️ Challenges Faced
+Kafka Setup required tuning configurations.
+Missed offset commits initially led to reprocessing old messages.
+Managed key settings like auto-commit, message expiry, and consumer groups.
+Using a Singleton Pattern for the producer.
+
+🚀 Final Outcome
+This architecture improved system performance by:
+ ✅ Offloading database writes to a dedicated consumer server.
+ ✅ Reducing DB read loads with a cache-first strategy.
+ ✅ Ensuring better system stability with batch writes and scheduled tasks.

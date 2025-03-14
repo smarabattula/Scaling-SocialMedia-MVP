@@ -1,15 +1,10 @@
 from datetime import datetime
-import random
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
-
+from .utils import generate_base62_id
 # Pydantic Models
 # Used for Request & Response validations
 
-BASE62_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-def generate_base62_id(length=6):
-    return ''.join(random.choices(BASE62_ALPHABET, k=length))
 
 class PostBase(BaseModel):
     id: str = None
@@ -66,13 +61,13 @@ class Post(PostBase):
         from_attributes = True
 
 class PostOut(BaseModel):
-    id: str
+    id: str | None
     title: str
     content: str
-    published: bool
-    createdAt: datetime
-    owner_id: int
-    likes: int
+    published: bool | None
+    createdAt: datetime | None
+    owner_id: int | None
+    likes: int | None
     class Config:
         from_attributes = True
 

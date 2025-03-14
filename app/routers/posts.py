@@ -1,4 +1,4 @@
-from fastapi import status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter, BackgroundTasks
 from sqlalchemy import func
 from ..database import get_db
 from sqlalchemy.orm import Session
@@ -7,35 +7,44 @@ from .. import models, schemas, oauth2
 from ..redis_cache import process_post_on_redis, redis_session
 from redis.commands.json.path import Path
 import asyncio
-
+from ..kafka.kafka_init import Kafka
+from ..kafka.kafka_processing import write_post
 router = APIRouter(prefix = "/posts", tags = ["posts"])
+import json
 
 # Write new post
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=schemas.PostOut)
 async def create_post(post: schemas.PostCreate,
+                      background_tasks: BackgroundTasks,
                       db: Session = Depends(get_db),
                       current_user: models.User = Depends(oauth2.get_current_user)):
     try:
 
-        def save_to_db(post, current_user, db):
-            new_post = models.Post(owner_id=current_user.id, **post.model_dump())
-            db.add(new_post)
-            db.commit()
-            db.refresh(new_post)
-            return new_post
+        # def save_to_db(post, current_user, db):
+        #     new_post = models.Post(owner_id=current_user.id, **post.model_dump())
+        #     db.add(new_post)
+        #     db.commit()
+        #     db.refresh(new_post)
+        #     return new_post
 
-        result = save_to_db(post, current_user, db)
-        return result
+        # result = save_to_db(post, current_user, db)
+        # return result
         # Run both tasks concurrently
         # save_db_task = asyncio.create_task(save_to_db(post, current_user, db))
-        # save_redis_task = asyncio.create_task(process_post_on_redis(post, 0, current_user.id))
+        save_redis_task = asyncio.create_task(process_post_on_redis(post, 0, current_user.id))
+        kafka_producer = Kafka().producer
+        post_data = post.model_dump()
+        post_data['createdAt'] = post_data['createdAt'].isoformat()
+        # write_to_kafka = asyncio.create_task(write_post(kafka_producer, ))
+        results = await asyncio.gather(save_redis_task)
 
-        # results = await asyncio.gather(save_db_task, save_redis_task)
-        # return results[-1]
+        background_tasks.add_task(write_post, kafka_producer, json.dumps(post_data), current_user)
+        return results[0]
     except HTTPException as e:
         db.rollback()
         async with redis_session() as r:
             await r.delete(f"post:{post.id}")
+
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"An error occurred while inserting into the database: {e}")
 
 # Read all posts, with query parameters

@@ -142,7 +142,8 @@ Managed key settings like auto-commit, message expiry, and consumer groups.
 
 Using a Singleton Pattern for the producer.
 
-🚀 Final Outcome
+🚀 Final Outcome 
+
 This architecture improved system performance by:
 
 ✅ Offloading database writes to a dedicated consumer server.

@@ -3,7 +3,9 @@
 1. Clone the repo content locally in your machine
 2. Open a Python virtual environment and activate it
 3. Install requirements: `pip install -r requirements.txt`
-4. Start the app using the command: `uvicorn app.2_server_ORM:app --reload`
+4. Start Redis Docker instance 'redis/redis-stack-server' on port 6379: `docker pull redis/redis-stack-server; docker run -d --name redis-stack -p 6379:6379 redis/redis-stack-server:latest`
+5. Setup Kafka Broker (using Kraft): kafka_start_instructions.txt
+6. Start the app using the command: `uvicorn app.server_ORM:app --reload`
 
 ## Scaling a Social Media App: Part 1 – Building the MVP 🚀
 

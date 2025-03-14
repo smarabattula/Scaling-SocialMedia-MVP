@@ -1,0 +1,17 @@
+Restart Kakfa Server from scratch via Kraft
+
+STEP - 0: Kill any running Kafka instances in machine
+ps aux | grep kafka
+kill -9 <PID>
+
+STEP - 1: Clear old configurations of Kraft
+rm -rf C:/tmp/kraft-combined-logs/tmp/kraft-combined-logs
+
+STEP - 2: Set new Kafka Cluster ID
+KAFKA_CLUSTER_ID=$(bin/kafka-storage.sh random-uuid)
+
+STEP - 3: Format Kafka configurations 
+bin/kafka-storage.sh format --standalone --cluster-id $KAFKA_CLUSTER_ID --config config/kraft/reconfig-server.properties
+
+STEP - 4: Start Kafka Broker using Kraft
+bin/kafka-server-start.sh config/kraft/reconfig-server.properties
